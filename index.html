@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6f5e">
+<meta name="description" content="Seguimiento de materias, notas y correlativas de tus carreras en la UNQ.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Mi Carrera UNQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+
+/* Layout: app de una columna para celular. Inicio -> carrera (Materias / Planear / Historial) -> hoja inferior por materia. Ajustes aparte. */
+:root{
+  --bg:#f3f4ef; --surface:#ffffff; --surface-2:#e9ebe4; --line:#d8dbd1;
+  --fg:#1b1e1a; --muted:#646a60;
+  --accent:#2f6f5e; --accent-soft:#dcebe4; --on-accent:#ffffff;
+  --ok:#3f7a2a; --ok-soft:#e2efd6;
+  --cur:#8a6400; --cur-soft:#f8ecc4;
+  --bad:#a63d2f; --bad-soft:#f5dfdb;
+  --lila:#7a55c4; --lila-soft:#ece4fa;
+  --lock:#9b9f95;
+  --t-lock:rgba(214,64,52,.10); --t-ok:rgba(70,150,60,.14); --t-cur:rgba(240,190,30,.20); --t-av:rgba(150,110,220,.13);
+  --shadow:0 10px 30px rgba(20,30,20,.18);
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121512; --surface:#1b1f1b; --surface-2:#242924; --line:#323832;
+    --fg:#e8ebe4; --muted:#9ea597;
+    --accent:#72c4a8; --accent-soft:#1d3a31; --on-accent:#0e1a15;
+    --ok:#a3cf78; --ok-soft:#24331a;
+    --cur:#ecc85a; --cur-soft:#3a3115;
+    --bad:#ee8f80; --bad-soft:#3d221e;
+    --lila:#b79cf0; --lila-soft:#2c2342;
+    --lock:#6c7268;
+    --t-lock:rgba(230,90,80,.13); --t-ok:rgba(120,190,90,.15); --t-cur:rgba(240,200,60,.15); --t-av:rgba(170,140,240,.15);
+    --shadow:0 10px 30px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121512; --surface:#1b1f1b; --surface-2:#242924; --line:#323832;
+  --fg:#e8ebe4; --muted:#9ea597;
+  --accent:#72c4a8; --accent-soft:#1d3a31; --on-accent:#0e1a15;
+  --ok:#a3cf78; --ok-soft:#24331a;
+  --cur:#ecc85a; --cur-soft:#3a3115;
+  --bad:#ee8f80; --bad-soft:#3d221e;
+  --lila:#b79cf0; --lila-soft:#2c2342;
+  --lock:#6c7268;
+  --t-lock:rgba(230,90,80,.13); --t-ok:rgba(120,190,90,.15); --t-cur:rgba(240,200,60,.15); --t-av:rgba(170,140,240,.15);
+  --shadow:0 10px 30px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.45 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
+.app{max-width:560px;margin:0 auto;padding-block:16px 96px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+
+/* ---------- Inicio ---------- */
+.home-head{display:flex;align-items:flex-start;gap:12px;padding-block:12px 18px}
+.home-head > div{flex:1;display:grid;gap:4px}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.home-head h1{font-size:2rem;line-height:1.1}
+.home-head p{margin:0;color:var(--muted)}
+.iconbtn{border:0;background:var(--surface-2);width:42px;height:42px;border-radius:12px;cursor:pointer;font-size:1.15rem;flex:none;display:grid;place-items:center}
+.upcoming{display:grid;gap:10px;margin-bottom:16px}
+.upcoming h2{font-size:1rem}
+.up-row{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;border:0;background:transparent;text-align:left;padding:0;cursor:pointer}
+.up-when{min-width:64px;text-align:center;border-radius:12px;background:var(--cur-soft);color:var(--cur);padding:6px 8px;font-weight:700;font-size:.82rem;line-height:1.2}
+.up-when.soon{background:var(--bad-soft);color:var(--bad)}
+.up-what b{display:block;font-size:.95rem;line-height:1.25}
+.up-what span{font-size:.8rem;color:var(--muted)}
+.careers{display:grid;gap:12px}
+.career{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer}
+.career:active{transform:scale(.99)}
+.ring{width:58px;height:58px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:.9rem}
+.career .t{font-family:var(--f-display);font-weight:700;font-size:1.08rem;line-height:1.2}
+.career .sub{font-size:.85rem;color:var(--muted);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.career .go{color:var(--muted);font-size:1.3rem}
+.home-foot{margin-top:22px;font-size:.82rem;color:var(--muted)}
+
+/* ---------- Carrera ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:5;background:var(--bg);display:grid;gap:8px;padding-block:8px}
+.topline{display:flex;align-items:center;gap:8px}
+.topline h2{font-size:1.05rem;line-height:1.2;min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.tabs a{text-align:center;padding:8px 4px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:.9rem}
+.tabs a[aria-current="page"]{background:var(--surface);color:var(--fg);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.summary{display:grid;gap:12px;margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.kpi b{display:block;font-family:var(--f-display);font-size:1.45rem;line-height:1.1}
+.kpi small{font-size:.55em;color:var(--muted)}
+.kpi span{font-size:.75rem;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar .b-ok{background:var(--ok)} .bar .b-cur{background:var(--cur)}
+.titles{display:flex;gap:6px;flex-wrap:wrap}
+.kpi.hl b{color:var(--lila)}
+details.coef{border-top:1px solid var(--line);padding-top:10px;font-size:.88rem}
+details.coef summary{cursor:pointer;color:var(--lila);font-weight:700}
+.formula{margin-top:10px;display:grid;gap:8px}
+.formula code{display:block;background:var(--surface-2);border-radius:10px;padding:10px 12px;font-family:ui-monospace,monospace;font-size:.82rem;overflow-x:auto;white-space:nowrap}
+.formula dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
+.formula dt{color:var(--muted)}
+.formula dd{margin:0;text-align:right}
+.formula .warn{color:var(--cur);font-size:.82rem;margin:0}
+.tchip{font-size:.78rem;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.tchip.done{background:var(--ok-soft);color:var(--ok);border-color:transparent;font-weight:700}
+.filters{display:flex;gap:6px;overflow-x:auto;padding-block:16px 4px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fbtn{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 14px;font-size:.88rem;cursor:pointer}
+.fbtn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.fbtn .n{opacity:.7;margin-left:4px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:10px}
+section.sec{margin-top:18px}
+.sec-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.sec-h h3{font-size:.95rem}
+.sec-h .c{margin-left:auto;font-size:.8rem;color:var(--muted)}
+.sec-note{font-size:.8rem;color:var(--muted);margin:-4px 0 8px}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;gap:6px;border-top:1px solid var(--line);padding-right:10px;min-height:60px}
+.row:first-child{border-top:0}
+.row.lock{background:var(--t-lock)} .row.ok{background:var(--t-ok)} .row.cur{background:var(--t-cur)} .row.av{background:var(--t-av)}
+.row.flash{animation:flash 1.2s ease}
+@keyframes flash{0%,40%{box-shadow:inset 0 0 0 2px var(--accent)}100%{box-shadow:inset 0 0 0 0 transparent}}
+.row .main{flex:1;min-width:0;display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center;text-align:left;
+  background:transparent;border:0;padding:12px 4px 12px 14px;cursor:pointer;min-height:60px}
+.row.lock .main{cursor:not-allowed}
+.check{width:24px;height:24px;border-radius:7px;border:2px solid var(--lock);display:grid;place-items:center;font-size:.85rem;font-weight:700;color:transparent}
+.row.av .check{border-color:var(--lila)}
+.row.cur .check{border-color:var(--cur)}
+.row.ok .check{border-color:var(--ok);background:var(--ok);color:var(--surface)}
+.row.lock .check{border-style:dashed}
+.nm{font-size:.95rem;line-height:1.25;min-width:0}
+.row.lock .nm,.row.ok .nm{color:var(--muted)}
+.why{display:block;font-size:.75rem;color:var(--muted);margin-top:2px}
+.why.warn{color:var(--bad)}
+.badge{font-size:.78rem;font-weight:700;padding:3px 9px;border-radius:8px;white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.lock{color:var(--lock);font-weight:400}
+.ibtn{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;height:34px;min-width:34px;padding:0 8px;cursor:pointer;
+  font-size:.8rem;display:grid;place-items:center;color:var(--muted)}
+.ibtn.curbtn[aria-pressed="true"]{background:var(--cur-soft);border-color:transparent;color:var(--cur);font-weight:700}
+.ibtn:disabled{opacity:.35;cursor:not-allowed}
+.empty{padding:18px;text-align:center;color:var(--muted);font-size:.9rem}
+
+/* ---------- Planear / Historial ---------- */
+.plan-item{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px 14px;border-top:1px solid var(--line);background:var(--t-av);
+  width:100%;text-align:left;border-left:0;border-right:0;border-bottom:0;cursor:pointer}
+.plan-item:first-child{border-top:0}
+.plan-n{width:44px;text-align:center;border-radius:12px;background:var(--lila-soft);color:var(--lila);padding:4px 0;line-height:1.1}
+.plan-n b{display:block;font-family:var(--f-display);font-size:1.25rem}
+.plan-n span{font-size:.65rem}
+.plan-item .nm b{font-weight:700}
+.hist-term{margin-top:18px}
+.hist-term h3{font-size:.95rem;display:flex;gap:8px;align-items:baseline}
+.hist-term h3 span{margin-left:auto;font-size:.8rem;color:var(--muted);font-family:var(--f-body);font-weight:400}
+.hist-row{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center}
+.hist-row:first-child{border-top:0}
+.hist-row.ok{background:var(--t-ok)} .hist-row.cur{background:var(--t-cur)}
+.yearbars{display:grid;gap:6px}
+.yb{display:grid;grid-template-columns:44px 1fr 28px;gap:8px;align-items:center;font-size:.85rem}
+.yb .track{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.yb .track i{display:block;height:100%;background:var(--ok);border-radius:99px}
+
+/* ---------- Hoja de materia ---------- */
+.scrim{position:fixed;inset:0;background:rgba(10,14,10,.45);z-index:20;opacity:0;transition:opacity .2s}
+.scrim.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-radius:22px 22px 0 0;
+  box-shadow:var(--shadow);max-height:88%;overflow:auto;transform:translateY(100%);transition:transform .25s ease;
+  padding:10px max(18px, env(safe-area-inset-left, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-right, 0px))}
+.sheet.show{transform:none}
+.sheet-in{max-width:560px;margin:0 auto;display:grid;gap:18px}
+.grab{width:42px;height:5px;border-radius:9px;background:var(--line);margin:0 auto}
+.sheet h3{font-size:1.25rem;line-height:1.2}
+.sheet .meta{font-size:.85rem;color:var(--muted);margin-top:4px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:10px 4px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--surface);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button[aria-pressed="true"][data-s="cur"]{color:var(--cur)}
+.seg button[aria-pressed="true"][data-s="ok"]{color:var(--ok)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.lbl{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}
+.grades{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:.85rem;color:var(--muted)}
+.field input,.field select,textarea{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);width:100%;min-width:0}
+.field input.big{font-size:1.3rem;font-family:var(--f-display);font-weight:700}
+.field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);outline:none}
+.field.wide{grid-column:1 / -1}
+.cond{border-radius:14px;padding:12px 14px;display:grid;gap:4px}
+.cond b{font-family:var(--f-display);font-size:1.05rem}
+.cond span{font-size:.85rem}
+.cond.prom{background:var(--ok-soft);color:var(--ok)}
+.cond.reg{background:var(--cur-soft);color:var(--cur)}
+.cond.des{background:var(--bad-soft);color:var(--bad)}
+.cond.none{background:var(--surface-2);color:var(--muted)}
+.cta{border:0;background:var(--accent);color:var(--on-accent);border-radius:12px;padding:12px;font-weight:700;cursor:pointer}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:12px;padding:11px;cursor:pointer;color:var(--muted)}
+.missing{background:var(--t-lock);border-radius:14px;padding:12px 14px;font-size:.9rem}
+.tree{display:grid;gap:10px}
+.tree .lvl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tree .lvl > span{font-size:.8rem;color:var(--muted);width:100%}
+.node{border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:.82rem;cursor:pointer;background:var(--surface);text-align:left}
+.node.ok{background:var(--t-ok);border-color:transparent}
+.node.cur{background:var(--t-cur);border-color:transparent}
+.node.av{background:var(--t-av);border-color:transparent}
+.node.lock{background:var(--t-lock);border-color:transparent}
+.node.me{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:700;cursor:default}
+.arrow{color:var(--muted);font-size:.9rem;width:100%;text-align:center}
+.shared{font-size:.85rem;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+
+/* ---------- Ajustes ---------- */
+.settings{display:grid;gap:14px;margin-top:8px}
+.settings h3{font-size:1rem;margin-bottom:6px}
+.settings p{margin:0 0 10px;font-size:.88rem;color:var(--muted)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow > *{flex:1;min-width:140px}
+textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:.75rem;resize:vertical}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);opacity:0;
+  background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:12px;font-size:.9rem;z-index:30;
+  width:max-content;max-width:calc(100% - 32px);transition:.2s;pointer-events:none;display:flex;gap:12px;align-items:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.act{pointer-events:auto}
+.toast button{border:0;background:var(--accent);color:var(--on-accent);border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer;white-space:nowrap}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:40;width:100%;height:100%}
+.demo-note{font-size:.78rem;color:var(--muted);text-align:center;margin-top:28px}
+@media (max-width:380px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app" id="app"></div>
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title" hidden></div>
+<div class="toast" id="toast" role="status"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<script>
+/* ============ DATOS DE LAS CARRERAS (de tu HTML) ============ */
+const m = (id, name, cr, req = [], extra = {}) => ({ id, name, cr, req, ...extra });
+function range(p,a,b){const r=[];for(let i=a;i<=b;i++)r.push(p+i);return r;}
+const CAREERS = [
+{ id:"iaci", short:"Ing. en Automatización", title:"Ingeniería en Automatización y Control Industrial", total:508,
+  groups:{ ori:{label:"Orientación",cap:52,mode:"credits"} },
+  sections:[
+  {title:"Ciclo Introductorio",items:[m("i1","Matemática",10),m("i2","Lectura y Escritura Académica",10),m("i3","Introducción al Conocimiento de la Física y la Química",10)]},
+  {title:"Ciclo Inicial",items:[m("4","Introducción a Ing. en Automatización y Control",4),m("5","Álgebra y Geometría Analítica",12,["i1"]),m("6","Análisis Matemático I",12,["i1"]),m("7","Química I",10,["i3"]),m("8","Sistemas de Representación",8,["i1"]),m("9","Física I",16,["5","6","i3"]),m("10","Análisis Matemático II “A”",16,["5","6"]),m("11","Informática, Algoritmos y Programación",12),m("12","Análisis en Variable Compleja",12,["10"]),m("13","Álgebra Lineal",12,["5","10"]),m("14","Técnicas Digitales “A”",12),m("15","Física II",16,["9","10"]),m("16","Probabilidad y Estadística",12,["10"]),m("17","Matemática Avanzada",12,["12"]),m("18","Teoría de Circuitos",12,["15","12"]),m("19","Métodos Numéricos",8,["10"]),m("20","Inglés",6)]},
+  {title:"Ciclo Superior · Núcleo Básico",items:[m("21","Instrumentos y Mediciones",12,["16","18"]),m("22","Organización y Arquitectura de Computadores",12,["11","14"]),m("23","Máquinas Industriales",12,["15","18"]),m("24","Señales y Sistemas",12,["16","17"]),m("25","Electrónica I",12,["15","18"]),m("26","Diseño basado en Microcontroladores",12,["22"]),m("27","Comunicaciones I",12,["24"]),m("28","Control Automático I",12,["24"]),m("29","Comunicaciones II",12,["27"]),m("30","Técnicas Avanzadas de Programación",12,["22"]),m("31","Control Automático II",12,["28"]),m("32","Procesos Industriales",12,["18","24","7"]),m("33","Instrumentación",12,["21","28"])]},
+  {title:"Ciclo Superior · Núcleo de Orientación",group:"ori",note:"Optativas: sumás 52 créditos eligiendo de esta lista.",items:[m("o1","Tópicos de Inteligencia Artificial",12,["16","24","28"],{group:"ori"}),m("o2","Control de Robots",12,["28"],{group:"ori"}),m("o3","Visión Artificial",12,["24","22"],{group:"ori"}),m("o4","Laboratorio de Automatización I",12,["22","28"],{group:"ori"}),m("o5","Laboratorio de Automatización II",12,["o4","29","33"],{group:"ori"}),m("o6","Tópicos de Confiabilidad y Mantenimiento",8,["16","33"],{group:"ori"}),m("o7","Seminario de Automatización y Control",8,["33","o4","28"],{group:"ori"}),m("o8","Control Digital y Estocástico",12,["31"],{group:"ori"}),m("o9","Sistemas No Lineales",8,["31"],{group:"ori"}),m("o10","Tópicos de Control Avanzado",8,["31"],{group:"ori"}),m("o11","Identificación y Control Adaptativo",8,["31"],{group:"ori"}),m("o12","Control Robusto",8,["31"],{group:"ori"}),m("o13","Metodología de Desarrollo de Sistemas en HW y SW",8,["26","22"],{group:"ori"}),m("o14","Sistemas Embebidos de Aplicación Industrial",12,["26"],{group:"ori"}),m("o15","Electrónica II",8,["25"],{group:"ori"}),m("o16","Electrónica Industrial",12,["23","25"],{group:"ori"})]},
+  {title:"Ciclo Superior · Núcleo Complementario",items:[m("39","Formulación, Evaluación y Gestión de Proyectos",8),m("40","Aspectos Legales en la Ingeniería",8),m("41","Economía y Organización Industrial",8),m("42","Gestión Ambiental y Seguridad del Trabajo",8)]},
+  {title:"Requisitos finales",items:[m("43","Práctica Profesional Supervisada (200 h)",22,[],{noGrades:true}),m("44","Trabajo Final",24,[],{minCredits:381,noGrades:true})]}
+  ], milestones:[] },
+{ id:"bioinf", short:"Lic. en Bioinformática", title:"Licenciatura en Bioinformática", total:470,
+  groups:{ A:{label:"Optativas A",cap:30,mode:"count",need:3}, B:{label:"Optativas B",cap:48,mode:"count",need:4}, C:{label:"Optativas C",cap:16,mode:"count",need:2} },
+  sections:[
+  {title:"Ciclo Introductorio",items:[m("b1","Lectura y Escritura Académica",10),m("b2","Matemática",10),m("b3","Elementos de Programación y Lógica",10)]},
+  {title:"Diplomatura en Ciencias Básicas",items:[m("b4","Análisis Matemático I",12),m("b5","Álgebra y Geometría Analítica",12),m("b6","Biología General",12),m("b7","Química I",10),m("b8","Análisis Matemático II",12,["b4","b5"]),m("b9","Química Orgánica I",12,["b7"]),m("b10","Introducción a la Programación",16),m("b11","Inglés",6),m("b12","Cálculo Avanzado",8,["b8"]),m("b13","Estructura de Datos",16,["b10"]),m("b14","Bioquímica I",12,["b6","b9"]),m("b15","Probabilidad y Estadística",12,["b4","b5"]),m("b16","Taller de Trabajo Intelectual",4),m("b17","Elementos de Física",10,["b4"]),m("b18","Algoritmos",12,["b13"]),m("b19","Taller de Trabajo Universitario",4),m("b20","Estadística Avanzada",10,["b15"]),m("b21","Ética y Legislación",10)]},
+  {title:"Tecnicatura Universitaria en Bioinformática",note:"La Tecnicatura pide además 1 optativa A y 1 optativa B.",items:[m("b22","Bioquímica II",16,["b14"]),m("b23","Biología Molecular y Celular",16,["b6","b14"]),m("b24","Biofísica",10,["b14","b17"]),m("b25","Fundamentos de Inmunología",10,["b6","b14"]),m("b26","Ingeniería Genética I",16,["b23"]),m("b27","Bioinformática",12,["b23"]),m("b28","Fisiología y Genética de Bacterias",12,["b14","b23"]),m("b29","Bases de Datos",12,["b13"]),m("b30","Algoritmos en Bioinformática",12,["b18","b27"]),m("b31","Bioinformática II",10,["b27"])]},
+  {title:"Ciclo Superior de la Licenciatura",items:[m("b32","Formulación y Evaluación de Bioproyectos",10),m("b33","Bioinformática III",10,["b31"]),m("b34","Bioinformática IV",10,["b31"])]},
+  {title:"Optativas A",group:"A",note:"Elegís 3 de estas 4.",items:[m("bA1","Genómica Funcional",10,[],{group:"A"}),m("bA2","Biología de Sistemas",10,[],{group:"A"}),m("bA3","Bases de Datos de Macromoléculas",10,[],{group:"A"}),m("bA4","Seminario III (contenido variable)",10,[],{group:"A"})]},
+  {title:"Optativas B",group:"B",note:"Elegís las 4.",items:[m("bB1","Procesamiento Digital de Imágenes",12,[],{group:"B"}),m("bB2","Modelización de Sistemas Biológicos",12,[],{group:"B"}),m("bB3","Sistemas Operativos",12,[],{group:"B"}),m("bB4","Programación Concurrente",12,[],{group:"B"})]},
+  {title:"Optativas C",group:"C",note:"Solo en la Licenciatura: elegís 2 de estas 4.",items:[m("bC1","Seminario I: Actualizaciones en Biología Molecular",8,[],{group:"C"}),m("bC2","Seminario II (contenido variable)",8,[],{group:"C"}),m("bC3","Características de Lenguajes de Programación",8,[],{group:"C"}),m("bC4","Seminario IV (contenido variable)",8,[],{group:"C"})]}
+  ], milestones:[
+    {name:"Diploma en Ciencias Básicas",test:(has,g)=>range("b",1,21).every(has)},
+    {name:"Técnico Univ. en Bioinformática",test:(has,g)=>range("b",1,31).every(has)&&g.A>=1&&g.B>=1}
+  ] },
+{ id:"tuap", short:"Tec. Ambiental y Petroquímica", title:"Tecnicatura Universitaria en Tecnología Ambiental y Petroquímica", total:222,
+  groups:{ comp:{label:"Complementario",cap:24,mode:"credits"} },
+  sections:[
+  {title:"Ciclo Introductorio",items:[m("t1","Lectura y Escritura Académica",10),m("t2","Matemática",10),m("t3","Introducción al Conocimiento de la Física y la Química",10)]},
+  {title:"Núcleo Básico Obligatorio",items:[m("t4","Matemática Aplicada",12,["t2"]),m("t5","Inglés Básico",4),m("t6","Inglés Técnico",4),m("t7","Informática",8),m("t8","Taller de Química",8),m("t9","Química General",12,["t3"]),m("t10","Química Orgánica Ecocompatible",12,["t9"]),m("t11","Fundamentos en Biología Celular y Molecular",8,["t9"]),m("t12","Taller de Física Aplicada",8,["t4","t3"])]},
+  {title:"Núcleo Avanzado Obligatorio",items:[m("t13","Laboratorio de Química Instrumental",12,["t12","t9"]),m("t14","Estadística Aplicada",12,["t4"]),m("t15","Microbiología Ambiental",12,["t11"]),m("t16","Química Verde",12,["t10"]),m("t17","Higiene, Seguridad y Medio Ambiente",8,["t9"]),m("t18","Residuos Sólidos",8),m("t19","Biotecnología Sustentable",12,["t15"]),m("t20","Ecología y Manejo Ambiental",8),m("t21","Técnicas de Análisis Ambiental",8,["t13","t16"])]},
+  {title:"Núcleo Complementario",group:"comp",note:"Optativas: sumás 24 créditos (2 materias).",items:[m("tc1","Producción por Fermentadores",12,["t15"],{group:"comp"}),m("tc2","Tratamiento de Efluentes",12,["t13"],{group:"comp"}),m("tc3","Biocatálisis",12,["t16"],{group:"comp"}),m("tc4","Biorremediación",12,["t15"],{group:"comp"}),m("tc5","Evaluación Ambiental",12,[],{group:"comp"}),m("tc6","Gestión Ambiental",12,["t17"],{group:"comp"}),m("tc7","Reservorios Petroleros",12,["t10"],{group:"comp"}),m("tc8","Materias Primas de la Industria Petroquímica",12,["t10"],{group:"comp"}),m("tc9","Geología del Petróleo",12,["t10"],{group:"comp"})]}
+  ], milestones:[] }
+];
+CAREERS.forEach(c=>{c.byId={};c.all=[];c.sections.forEach(s=>s.items.forEach(it=>{c.byId[it.id]=it;c.all.push(it);}));});
+
+/* Materias compartidas entre carreras (misma materia, otro plan) */
+const SHARED = [
+  [["iaci","i1"],["bioinf","b2"],["tuap","t2"]],
+  [["iaci","i2"],["bioinf","b1"],["tuap","t1"]],
+  [["iaci","i3"],["tuap","t3"]],
+  [["iaci","5"],["bioinf","b5"]],
+  [["iaci","6"],["bioinf","b4"]],
+  [["iaci","7"],["bioinf","b7"]],
+  [["iaci","16"],["bioinf","b15"]],
+  [["iaci","20"],["bioinf","b11"]]
+];
+const C = id => CAREERS.find(c => c.id === id);
+function partners(cid, id){
+  const g = SHARED.find(gr => gr.some(([a,b]) => a===cid && b===id));
+  return g ? g.filter(([a,b]) => !(a===cid && b===id)) : [];
+}
+
+/* ============ ESTADO ============
+   rec[carrera][materia] = { s:"cur"|"ok", p1,r1,p2,r2,fin, cuat:"2C 2026", d1,dr1,d2,dr2 (fechas) } */
+const KEY = "mi-carrera-unq-v1", CFG = "mi-carrera-unq-cfg";
+let rec, cfg;
+try { rec = JSON.parse(localStorage.getItem(KEY)); } catch(e){ rec = null; }
+if (!rec || typeof rec !== "object") rec = { iaci:{ i1:{s:"ok"}, i2:{s:"ok"} }, bioinf:{}, tuap:{} };
+CAREERS.forEach(c => { if (!rec[c.id]) rec[c.id] = {}; });
+try { cfg = JSON.parse(localStorage.getItem(CFG)) || {}; } catch(e){ cfg = {}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch(e){} }
+function saveCfg(){ try { localStorage.setItem(CFG, JSON.stringify(cfg)); } catch(e){} }
+/* Materias compartidas: un solo registro (estado, notas, fechas, cuatrimestre, aplazos) copiado en todas las carreras */
+function syncShared(cid,id){
+  const src = rec[cid][id];
+  partners(cid,id).forEach(([c2,m2]) => { if (src) rec[c2][m2] = JSON.parse(JSON.stringify(src)); else delete rec[c2][m2]; });
+}
+function reconcileShared(){
+  SHARED.forEach(gr => {
+    const recs = gr.map(([a,b]) => rec[a]?.[b]).filter(Boolean);
+    if (!recs.length) return;
+    recs.sort((x,y) => Object.keys(x).length - Object.keys(y).length);
+    const merged = Object.assign({}, ...recs);
+    if (recs.some(x => x.s==="ok")) merged.s = "ok";
+    gr.forEach(([a,b]) => { rec[a][b] = JSON.parse(JSON.stringify(merged)); });
+  });
+}
+reconcileShared(); save();
+function applyTheme(){
+  const t = cfg.theme || "auto";
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+}
+applyTheme();
+const isDark = () => { const t = cfg.theme || "auto"; return t==="dark" || (t==="auto" && matchMedia("(prefers-color-scheme: dark)").matches); };
+const themeBtn = () => `<button class="iconbtn" data-theme-toggle aria-label="${isDark()?"Cambiar a tema claro":"Cambiar a tema oscuro"}">${isDark()?"☀︎":"☾"}</button>`;
+
+/* ============ LÓGICA ============ */
+const R = c => rec[c.id];
+const isOk = (c,id) => R(c)[id]?.s === "ok";
+function credits(c, exclude){
+  let t = 0; const g = {};
+  c.all.forEach(it => { if (it.id===exclude || !isOk(c,it.id)) return; if (it.group) g[it.group]=(g[it.group]||0)+it.cr; else t += it.cr; });
+  Object.entries(c.groups).forEach(([k,d]) => t += Math.min(g[k]||0, d.cap));
+  return t;
+}
+function missing(c,it){
+  const miss = it.req.filter(r => !isOk(c,r)).map(r => c.byId[r].name);
+  if (it.minCredits){ const h = credits(c,it.id); if (h < it.minCredits) miss.push(`${it.minCredits} créditos aprobados (llevás ${h})`); }
+  return miss;
+}
+function status(c,it){
+  const r = R(c)[it.id];
+  if (r?.s === "ok") return "ok";
+  if (r?.s === "cur") return "cur";
+  return missing(c,it).length ? "lock" : "av";
+}
+const children = (c,id) => c.all.filter(it => it.req.includes(id));
+function descendants(c,id){
+  const seen = new Set(), st = [id];
+  while (st.length){ const x = st.pop(); children(c,x).forEach(ch => { if (!seen.has(ch.id)){ seen.add(ch.id); st.push(ch.id); } }); }
+  return seen;
+}
+function groupProg(c){ const o={}; Object.keys(c.groups).forEach(g=>o[g]={n:0,cr:0}); c.all.forEach(it=>{ if(it.group&&isOk(c,it.id)){o[it.group].n++;o[it.group].cr+=it.cr;} }); return o; }
+function remaining(c){
+  let req = c.all.filter(i=>!i.group).length, ok = c.all.filter(i=>!i.group&&isOk(c,i.id)).length;
+  Object.entries(c.groups).forEach(([g,d]) => {
+    const items = c.all.filter(i=>i.group===g), done = items.filter(i=>isOk(c,i.id)).length;
+    const need = d.mode==="count" ? d.need : Math.ceil(d.cap/(items.reduce((a,i)=>a+i.cr,0)/items.length));
+    req += need; ok += Math.min(done,need);
+  });
+  return { req, left: req-ok };
+}
+function titles(c){
+  const gp = groupProg(c), gc = {}; Object.keys(gp).forEach(g=>gc[g]=gp[g].n);
+  const groupsDone = Object.entries(c.groups).every(([g,d]) => d.mode==="count" ? gp[g].n>=d.need : gp[g].cr>=d.cap);
+  const fin = c.all.filter(i=>!i.group).every(i=>isOk(c,i.id)) && groupsDone;
+  const ms = c.milestones.map(x => ({ n:x.name, ok:x.test(id=>isOk(c,id), gc) }));
+  ms.push({ n: c.title.replace(/^(Licenciatura|Tecnicatura Universitaria|Ingeniería) en /,(a,b)=>({"Licenciatura":"Licenciado/a en ","Tecnicatura Universitaria":"Técnico/a en ","Ingeniería":"Ingeniero/a en "})[b]), ok: fin });
+  return ms;
+}
+
+/* Notas: promoción con promedio ≥ 7 y ningún parcial < 6.
+   El recuperatorio reemplaza la nota del parcial (supuesto a confirmar).
+   Regular con ambos ≥ 4 → integrador (supuesto a confirmar). */
+const num = v => { const n = parseFloat(String(v??"").replace(",",".")); return isFinite(n) ? n : null; };
+const fmt = n => (Math.round(n*100)/100).toLocaleString("es-AR");
+function eff(r,i){ const rc = num(r?.["r"+i]); return rc!==null ? rc : num(r?.["p"+i]); }
+function condition(r){
+  const p1 = eff(r,1), p2 = eff(r,2), fin = num(r?.fin);
+  if (fin !== null) return { k: fin>=4?"prom":"des", t: fin>=4?`Aprobada con ${fmt(fin)} en el integrador`:`Integrador desaprobado (${fmt(fin)})`, nota: fin>=4?fin:null };
+  if (p1===null || p2===null) return { k:"none", t: p1===null&&p2===null ? "Cargá los parciales para ver tu condición" : "Falta cargar un parcial", nota:null };
+  const avg = (p1+p2)/2;
+  if (p1>=6 && p2>=6 && avg>=7) return { k:"prom", t:`Promocionás con ${fmt(avg)}`, sub:"No necesitás rendir integrador.", nota:avg };
+  if (p1>=4 && p2>=4) return { k:"reg", t:`Regular · promedio ${fmt(avg)}`, sub:"Para aprobar tenés que rendir el integrador.", nota:null };
+  return { k:"des", t:"Desaprobada", sub:"Tenés algún parcial con menos de 4. Cargá el recuperatorio si lo rendiste.", nota:null };
+}
+function finalGrade(c,id){ const r = R(c)[id]; if (r?.s!=="ok") return null; return condition(r).nota; }
+
+/* Cuatrimestres */
+function cuatNow(){ const d = new Date(); return `${d.getMonth()<7?1:2}C ${d.getFullYear()}`; }
+const CUATS = (() => { const o=[]; for (let y=2036; y>=2016; y--) o.push(`2C ${y}`, `1C ${y}`); return o; })();
+const cuatKey = s => { const m = /^(\d)C (\d{4})$/.exec(s||""); return m ? (+m[2])*10 + (+m[1]) : 0; };
+
+/* Fechas */
+const FECHAS = [["d1","1.º parcial"],["dr1","Recup. 1.º"],["d2","2.º parcial"],["dr2","Recup. 2.º"]];
+function today(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function daysTo(iso){ const [y,mo,d] = iso.split("-").map(Number); return Math.round((new Date(y,mo-1,d) - today())/86400000); }
+function whenLabel(n){ return n===0 ? "Hoy" : n===1 ? "Mañana" : `En ${n} días`; }
+function upcoming(){
+  const out = [];
+  CAREERS.forEach(c => Object.entries(R(c)).forEach(([id,r]) => {
+    if (!c.byId[id] || r.s==="ok") return;
+    FECHAS.forEach(([k,lbl]) => { if (r[k]){ const n = daysTo(r[k]); if (n>=0 && n<=60) out.push({ c, id, lbl, n, date:r[k] }); } });
+  }));
+  return out.sort((a,b) => a.n-b.n).slice(0,5);
+}
+const fmtDate = iso => { const [y,mo,d] = iso.split("-"); return `${+d}/${+mo}`; };
+
+function stats(c){
+  const ok = c.all.filter(i=>isOk(c,i.id)).length, cur = c.all.filter(i=>R(c)[i.id]?.s==="cur").length;
+  const av = c.all.filter(i=>status(c,i)==="av").length;
+  const cr = credits(c), pct = Math.round(cr/c.total*100);
+  const k = coef(c);
+  return { ok, cur, av, cr, pct, avg:k.prom, coef:k.coef };
+}
+
+/* Coeficiente UNQ = (Promedio / 2) + ((TCC − TCF) / TCC) × 5
+   Promedio: notas de cursadas finalizadas, incluyendo aplazos (sin ausentes).
+   TCC: créditos de la carrera. TCF: créditos que faltan. */
+const splitApl = s => String(s||"").split(/[;,\s]+/).map(num).filter(n => n!==null && n>=1 && n<=10);
+function coef(c){
+  const notas = [];
+  let apl = 0;
+  c.all.forEach(it => {
+    if (it.noGrades) return;
+    const r = R(c)[it.id]; if (!r) return;
+    const a = splitApl(r.apl); apl += a.length; notas.push(...a);
+    const f = finalGrade(c,it.id); if (f!==null) notas.push(f);
+  });
+  const sinNota = c.all.filter(i => !i.noGrades && isOk(c,i.id) && finalGrade(c,i.id)===null).length;
+  const sum = notas.reduce((a,b)=>a+b,0), prom = notas.length ? sum/notas.length : null;
+  const tcc = c.total, cr = credits(c), tcf = tcc - cr;
+  const k = prom===null ? null : prom/2 + ((tcc-tcf)/tcc)*5;
+  return { prom, n:notas.length, apl, sum, tcc, tcf, cr, coef:k, sinNota };
+}
+const f2 = n => (Math.round(n*100)/100).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ============ UI ============ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+let filter = "all", openId = null, toastAction = null, flashId = null;
+
+function toast(msg, action){
+  const t = $("toast"); toastAction = action || null;
+  t.innerHTML = `<span>${esc(msg)}</span>${action?`<button type="button" data-toast-act>${esc(action.label)}</button>`:""}`;
+  t.classList.toggle("act", !!action); t.classList.add("show");
+  clearTimeout(toast.tm); toast.tm = setTimeout(() => { t.classList.remove("show","act"); toastAction=null; }, action?6000:2600);
+}
+
+/* Rutas: #iaci, #iaci-plan, #iaci-hist, #ajustes, vacío = inicio */
+function parseRoute(){
+  const h = location.hash.slice(1);
+  if (h === "ajustes") return { view:"ajustes" };
+  const [cid, sub] = h.split("-");
+  const c = C(cid);
+  if (c) return { view: sub==="plan"?"plan":sub==="hist"?"hist":"materias", c };
+  return { view:"home" };
+}
+const current = () => parseRoute().c;
+
+function ring(pct){
+  const r = 24, Cc = 2*Math.PI*r;
+  return `<div class="ring"><svg viewBox="0 0 58 58" aria-hidden="true"><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="6"/>
+  <circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--ok)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${Cc*pct/100} ${Cc}"/></svg>
+  <span class="pct num">${pct}%</span></div>`;
+}
+
+function renderHome(){
+  document.title = "Mi Carrera UNQ";
+  const up = upcoming();
+  $("app").innerHTML = `
+  <header class="home-head">
+    <div><span class="eyebrow">Universidad Nacional de Quilmes</span><h1>Mi carrera</h1>
+    <p>Elegí una carrera para ver tus materias, cargar notas y planear lo que sigue.</p></div>
+    ${themeBtn()}<a class="iconbtn" href="#ajustes" aria-label="Ajustes" style="text-decoration:none;color:inherit">⚙</a>
+  </header>
+  ${up.length ? `<div class="card upcoming"><h2>Próximos parciales</h2>${up.map(u => `
+    <button class="up-row" data-go="${u.c.id}" data-flash="${u.id}">
+      <span class="up-when ${u.n<=3?"soon":""}">${whenLabel(u.n)}<br><span class="num" style="font-weight:400">${fmtDate(u.date)}</span></span>
+      <span class="up-what"><b>${esc(u.lbl)} · ${esc(u.c.byId[u.id].name)}</b><span>${esc(u.c.short)}</span></span>
+    </button>`).join("")}</div>` : ""}
+  <div class="careers">${CAREERS.map(c => { const s = stats(c), rm = remaining(c); return `
+    <button class="career" data-go="${c.id}">
+      ${ring(s.pct)}
+      <div style="min-width:0"><div class="t">${esc(c.title)}</div>
+        <div class="sub num"><span>${s.ok} aprobadas · faltan ${rm.left}</span>${s.cur?`<span>${s.cur} cursando</span>`:""}${s.coef!==null?`<span>Coef. ${f2(s.coef)}</span>`:""}</div></div>
+      <span class="go" aria-hidden="true">›</span>
+    </button>`; }).join("")}
+  </div>
+  <p class="home-foot">Tu progreso se guarda en este celular. Hacé un respaldo de vez en cuando desde Ajustes.</p>`;
+}
+
+function topbar(c, view){
+  const tabs = [["materias","",`Materias`],["plan","-plan","Planear"],["hist","-hist","Historial"]];
+  return `<div class="topbar">
+    <div class="topline"><a class="iconbtn" href="#" aria-label="Volver al inicio" style="text-decoration:none;color:inherit">‹</a><h2 style="flex:1">${esc(c.title)}</h2>${themeBtn()}</div>
+    <nav class="tabs">${tabs.map(([v,suf,l]) => `<a href="#${c.id}${suf}" ${view===v?'aria-current="page"':""}>${l}</a>`).join("")}</nav>
+  </div>`;
+}
+
+function renderMaterias(c){
+  document.title = c.short + " · Mi Carrera UNQ";
+  const s = stats(c), gp = groupProg(c), ms = titles(c);
+  const curPct = Math.round(c.all.filter(i=>R(c)[i.id]?.s==="cur").reduce((a,i)=>a+i.cr,0)/c.total*100);
+  const counts = { all:c.all.length, cur:s.cur, av:s.av, ok:s.ok };
+  const F = [["all","Todas"],["cur","Cursando"],["av","Disponibles"],["ok","Aprobadas"]];
+  const keep = it => filter==="all" || status(c,it)===filter;
+  $("app").innerHTML = `${topbar(c,"materias")}
+  <div class="card summary">
+    <div class="kpis num">
+      <div class="kpi"><b>${s.pct}%</b><span>de la carrera</span></div>
+      <div class="kpi"><b>${s.ok}<small>/${remaining(c).req}</small></b><span>aprobadas</span></div>
+      <div class="kpi"><b>${s.avg===null?"–":fmt(s.avg)}</b><span>promedio</span></div>
+      <div class="kpi hl"><b>${s.coef===null?"–":f2(s.coef)}</b><span>coeficiente</span></div>
+    </div>
+    <div class="bar" aria-label="${s.pct}% aprobado"><i class="b-ok" style="width:${s.pct}%"></i><i class="b-cur" style="width:${curPct}%"></i></div>
+    <div class="titles">${ms.map(x => `<span class="tchip ${x.ok?"done":""}">${x.ok?"🎓 ":""}${esc(x.n)}</span>`).join("")}</div>
+    ${coefBox(c)}
+  </div>
+  <p class="hint">Tocá una materia para aprobarla o desmarcarla. ✎ abre notas, fechas y correlativas.</p>
+  <div class="filters" role="group" aria-label="Filtrar materias">${F.map(([k,l]) => `<button class="fbtn" data-f="${k}" aria-pressed="${filter===k}">${l}<span class="n num">${counts[k]}</span></button>`).join("")}</div>
+  ${c.sections.map(sec => {
+    const items = sec.items.filter(keep); if (!items.length) return "";
+    let cnt;
+    if (sec.group){ const d = c.groups[sec.group], p = gp[sec.group]; cnt = d.mode==="count" ? `${p.n} de ${d.need} elegidas` : `${Math.min(p.cr,d.cap)} de ${d.cap} créditos`; }
+    else cnt = `${sec.items.filter(i=>isOk(c,i.id)).length}/${sec.items.length}`;
+    return `<section class="sec"><div class="sec-h"><h3>${esc(sec.title)}</h3><span class="c num">${cnt}</span></div>
+      ${sec.note?`<p class="sec-note">${esc(sec.note)}</p>`:""}
+      <div class="list">${items.map(it => row(c,it)).join("")}</div></section>`;
+  }).join("") || `<div class="empty">No hay materias en este filtro.</div>`}`;
+  if (flashId){ const el = document.querySelector(`[data-row="${CSS.escape(flashId)}"]`); if (el){ el.classList.add("flash"); el.scrollIntoView({block:"center"}); } flashId = null; }
+}
+
+function coefBox(c){
+  const k = coef(c);
+  const body = k.prom===null
+    ? `<p class="warn">Cargá las notas de tus materias aprobadas (con ✎) para calcular el promedio y el coeficiente.</p>`
+    : `<code>(${f2(k.prom)} / 2) + ((${k.tcc} − ${k.tcf}) / ${k.tcc}) × 5 = ${f2(k.prom/2)} + ${f2((k.tcc-k.tcf)/k.tcc*5)} = <b>${f2(k.coef)}</b></code>`;
+  return `<details class="coef" ${coefOpen?"open":""}><summary>Cómo se calcula tu coeficiente</summary><div class="formula">
+    <p class="muted" style="margin:0">La UNQ lo usa para ordenar las inscripciones: (Promedio / 2) + ((TCC − TCF) / TCC) × 5. Va de 0 a 10.</p>
+    ${body}
+    <dl class="num">
+      <dt>Promedio (${k.n} nota${k.n===1?"":"s"}${k.apl?`, ${k.apl} aplazo${k.apl===1?"":"s"}`:""})</dt><dd>${k.prom===null?"–":f2(k.prom)}</dd>
+      <dt>TCC · créditos de la carrera</dt><dd>${k.tcc}</dd>
+      <dt>TCF · créditos que te faltan</dt><dd>${k.tcf}</dd>
+    </dl>
+    ${k.sinNota ? `<p class="warn">${k.sinNota} materia${k.sinNota===1?"":"s"} aprobada${k.sinNota===1?"":"s"} sin nota cargada: no entra${k.sinNota===1?"":"n"} en el promedio.</p>` : ""}
+    <p class="muted" style="margin:0;font-size:.82rem">Los aplazos (cursadas desaprobadas) se cargan en el detalle ✎ de cada materia. Los ausentes no cuentan.</p>
+  </div></details>`;
+}
+let coefOpen = false;
+document.addEventListener("toggle", e => { if (e.target.classList?.contains("coef")) coefOpen = e.target.open; }, true);
+
+function row(c,it){
+  const st = status(c,it), r = R(c)[it.id];
+  let badge = "", why = "";
+  if (st==="ok"){ const n = finalGrade(c,it.id); if (n!==null) badge = `<span class="badge ok num">${fmt(n)}</span>`; }
+  else if (st==="cur"){ const cd = condition(r); const p = [eff(r,1),eff(r,2)].map(x=>x===null?"–":fmt(x)).join(" · ");
+    why = `<span class="why num">Parciales ${p}${cd.k==="prom"?" · promocionás":cd.k==="reg"?" · regular":cd.k==="des"?" · desaprobada":""}</span>`; }
+  else if (st==="lock"){ badge = `<span class="badge lock" aria-label="Bloqueada">🔒</span>`; why = `<span class="why">Falta: ${esc(missing(c,it).join(" · "))}</span>`; }
+  if ((st==="ok"||st==="cur") && missing(c,it).length) why += `<span class="why warn">Correlativa pendiente: ${esc(missing(c,it).join(" · "))}</span>`;
+  const locked = st==="lock";
+  return `<div class="row ${st}" data-row="${it.id}">
+    <button class="main" data-toggle="${it.id}" aria-pressed="${st==="ok"}"><span class="check" aria-hidden="true">✓</span>
+      <span class="nm">${esc(it.name)}${why}</span>${badge}</button>
+    <button class="ibtn" data-open="${it.id}" aria-label="Detalle de ${esc(it.name)}">✎</button>
+    <button class="ibtn curbtn" data-cur="${it.id}" aria-pressed="${st==="cur"}" ${locked?"disabled":""}>Cursando</button>
+  </div>`;
+}
+
+function renderPlan(c){
+  document.title = "Planear · " + c.short;
+  const av = c.all.filter(it => status(c,it)==="av").map(it => {
+    const d = descendants(c,it.id), direct = children(c,it.id).filter(ch => status(c,ch)==="lock");
+    const opens = direct.filter(ch => ch.req.filter(r => !isOk(c,r)).length===1).map(ch=>ch.name);
+    return { it, n: [...d].filter(id => !isOk(c,id)).length, opens };
+  }).sort((a,b) => b.n-a.n || a.it.name.localeCompare(b.it.name));
+  const cur = c.all.filter(it => R(c)[it.id]?.s==="cur");
+  $("app").innerHTML = `${topbar(c,"plan")}
+  <div class="card" style="margin-top:6px">
+    <h3 style="font-size:1rem">¿Qué curso el próximo cuatrimestre?</h3>
+    <p class="muted" style="margin:6px 0 0;font-size:.88rem">Estas materias ya las podés cursar. Arriba están las que más camino te abren: el número es cuántas materias dependen de ella, directa o indirectamente.</p>
+  </div>
+  ${cur.length ? `<p class="hint">Estás cursando: ${cur.map(i=>esc(i.name)).join(", ")}. Cuando las apruebes, esta lista se actualiza.</p>` : ""}
+  <section class="sec"><div class="list">${av.length ? av.map(({it,n,opens}) => `
+    <button class="plan-item" data-open="${it.id}">
+      <span class="plan-n num"><b>${n}</b><span>destraba</span></span>
+      <span class="nm"><b>${esc(it.name)}</b>${it.group?`<span class="why">Optativa</span>`:""}${opens.length?`<span class="why">Al aprobarla se habilita: ${esc(opens.join(", "))}</span>`:""}</span>
+    </button>`).join("") : `<div class="empty">No hay materias disponibles sin estado. Revisá las que estás cursando.</div>`}</div></section>`;
+}
+
+function renderHist(c){
+  document.title = "Historial · " + c.short;
+  const items = c.all.filter(it => R(c)[it.id]?.s).map(it => ({ it, r: R(c)[it.id] }));
+  const groups = {};
+  items.forEach(x => { const k = x.r.cuat || "Sin cuatrimestre"; (groups[k] = groups[k] || []).push(x); });
+  const keys = Object.keys(groups).sort((a,b) => cuatKey(b)-cuatKey(a));
+  const byYear = {};
+  items.filter(x => x.r.s==="ok" && x.r.cuat).forEach(x => { const y = x.r.cuat.slice(3); byYear[y] = (byYear[y]||0)+1; });
+  const years = Object.keys(byYear).sort(); const max = Math.max(1, ...Object.values(byYear));
+  $("app").innerHTML = `${topbar(c,"hist")}
+  ${years.length ? `<div class="card" style="margin-top:6px"><h3 style="font-size:1rem;margin-bottom:10px">Materias aprobadas por año</h3>
+    <div class="yearbars">${years.map(y => `<div class="yb num"><span>${y}</span><span class="track"><i style="width:${byYear[y]/max*100}%"></i></span><b>${byYear[y]}</b></div>`).join("")}</div></div>` : ""}
+  ${keys.length ? keys.map(k => {
+    const list = groups[k], okN = list.filter(x=>x.r.s==="ok").length;
+    const gr = list.map(x => finalGrade(c,x.it.id)).filter(n=>n!==null);
+    return `<section class="hist-term"><h3>${esc(k)}<span>${okN} aprobada${okN===1?"":"s"}${gr.length?` · promedio ${fmt(gr.reduce((a,b)=>a+b,0)/gr.length)}`:""}</span></h3>
+      <div class="list" style="margin-top:8px">${list.map(x => { const n = finalGrade(c,x.it.id); return `
+        <div class="hist-row ${x.r.s}"><button class="node" style="border:0;background:transparent;padding:0;font-size:.92rem" data-open="${x.it.id}">${esc(x.it.name)}</button>
+        <span class="badge ${x.r.s==="ok"?"ok":""} num">${x.r.s==="cur"?"Cursando":n!==null?fmt(n):"Aprobada"}</span></div>`; }).join("")}</div></section>`;
+  }).join("") : `<div class="empty">Todavía no hay materias aprobadas ni en curso.</div>`}
+  ${groups["Sin cuatrimestre"] ? `<p class="hint">Para ordenar las materias "Sin cuatrimestre", abrí su detalle (✎) y elegí cuándo la cursaste.</p>` : ""}`;
+}
+
+function renderAjustes(){
+  document.title = "Ajustes · Mi Carrera UNQ";
+  const t = cfg.theme || "auto";
+  $("app").innerHTML = `<div class="topbar"><div class="topline"><a class="iconbtn" href="#" aria-label="Volver al inicio" style="text-decoration:none;color:inherit">‹</a><h2>Ajustes</h2></div></div>
+  <div class="settings">
+    <div class="card"><h3>Tema</h3><p>Automático sigue el modo claro u oscuro de tu celular.</p>
+      <div class="seg" role="group" aria-label="Tema">${[["auto","Automático"],["light","Claro"],["dark","Oscuro"]].map(([k,l]) => `<button data-theme-set="${k}" aria-pressed="${t===k}">${l}</button>`).join("")}</div></div>
+    <div class="card"><h3>Respaldo</h3><p>Guardá un archivo con todo tu progreso (estados, notas, fechas y cuatrimestres). Si cambiás de celular o se borran los datos, lo importás y listo.</p>
+      <div class="btnrow"><button class="cta" data-export>Descargar respaldo</button><button class="ghost" data-import>Importar archivo</button></div>
+      <p style="margin-top:12px">También podés copiar el respaldo como texto y guardarlo donde quieras (una nota, un mail a vos mismo).</p>
+      <div class="btnrow"><button class="ghost" data-copy>Copiar como texto</button></div>
+      <div class="field" style="margin-top:10px"><label for="pasteBox">Restaurar desde texto</label><textarea id="pasteBox" placeholder="Pegá acá el texto del respaldo"></textarea></div>
+      <div class="btnrow" style="margin-top:8px"><button class="ghost" data-restore>Restaurar</button></div>
+      <p id="restoreMsg" style="margin-top:8px" role="status"></p></div>
+  </div>`;
+}
+
+/* ---------- Hoja inferior ---------- */
+function node(c,id){ const it = c.byId[id]; return `<button class="node ${status(c,it)}" data-open="${id}">${esc(it.name)}</button>`; }
+function openSheet(c,id){
+  openId = id; const it = c.byId[id], r = R(c)[id] || {};
+  const miss = missing(c,it), locked = miss.length && !r.s;
+  const cd = condition(r), parents = it.req.map(x=>c.byId[x]), kids = children(c,id);
+  const grand = [...new Set(kids.flatMap(k => children(c,k.id).map(g=>g.id)))];
+  const sh = partners(c.id,id);
+  const gradeField = (k,l) => `<div class="field"><label for="g-${k}">${l}</label><input class="big" id="g-${k}" inputmode="decimal" placeholder="–" value="${esc(r[k]??"")}" data-g="${k}"></div>`;
+  $("sheet").innerHTML = `<div class="sheet-in">
+    <div class="grab"></div>
+    <div><h3 id="sh-title">${esc(it.name)}</h3><div class="meta">${it.cr} créditos${it.group?" · optativa":""}</div></div>
+    ${locked ? `<div class="missing"><b>Todavía no la podés cursar.</b> Te falta: ${esc(miss.join(" · "))}</div>` : ""}
+    <div><div class="lbl">Estado</div>
+      <div class="seg" role="group" aria-label="Estado de la materia">
+        <button data-s="" aria-pressed="${!r.s}">Pendiente</button>
+        <button data-s="cur" aria-pressed="${r.s==="cur"}" ${locked?"disabled":""}>Cursando</button>
+        <button data-s="ok" aria-pressed="${r.s==="ok"}" ${locked?"disabled":""}>Aprobada</button>
+      </div></div>
+    ${r.s ? `<div class="field"><label for="g-cuat">Cuatrimestre en que la cursaste</label>
+      <select id="g-cuat" data-g="cuat"><option value="">Sin indicar</option>${CUATS.map(q => `<option ${r.cuat===q?"selected":""}>${q}</option>`).join("")}</select></div>` : ""}
+    ${!it.noGrades && !locked ? `
+    <div><div class="lbl">Notas</div><div class="grades">
+      ${gradeField("p1","1.º parcial")}${gradeField("r1","Recuperatorio 1.º")}${gradeField("p2","2.º parcial")}${gradeField("r2","Recuperatorio 2.º")}
+      <div class="field wide"><label for="g-fin">Integrador / final (solo si no promocionás)</label><input class="big" id="g-fin" inputmode="decimal" placeholder="–" value="${esc(r.fin??"")}" data-g="fin"></div>
+      <div class="field wide"><label for="g-apl">Aplazos: notas de cursadas anteriores desaprobadas</label><input id="g-apl" inputmode="decimal" placeholder="Ej: 2, 3" value="${esc(r.apl??"")}" data-g="apl"><span class="muted" style="font-size:.78rem">Cuentan para el promedio del coeficiente. Los ausentes no se cargan.</span></div>
+    </div></div>
+    <div class="cond ${cd.k}" id="cond"><b>${esc(cd.t)}</b>${cd.sub?`<span>${esc(cd.sub)}</span>`:""}</div>
+    ${r.s==="cur" && cd.nota!==null ? `<button class="cta" data-s="ok">Marcar como aprobada con ${fmt(cd.nota)}</button>` : ""}
+    <div><div class="lbl">Fechas de parciales</div><div class="grades">
+      ${FECHAS.map(([k,l]) => `<div class="field"><label for="g-${k}">${l}</label><input type="date" id="g-${k}" value="${esc(r[k]??"")}" data-g="${k}"></div>`).join("")}
+    </div></div>` : ""}
+    <div><div class="lbl">Correlativas</div><div class="tree">
+      ${parents.length ? `<div class="lvl"><span>Necesita</span>${parents.map(p=>node(c,p.id)).join("")}</div><div class="arrow" aria-hidden="true">↓</div>` : ""}
+      <div class="lvl"><button class="node me" tabindex="-1">${esc(it.name)}</button></div>
+      ${kids.length ? `<div class="arrow" aria-hidden="true">↓</div><div class="lvl"><span>Habilita</span>${kids.map(k=>node(c,k.id)).join("")}</div>` : `<p class="muted" style="margin:0;font-size:.85rem">No es correlativa de ninguna otra materia.</p>`}
+      ${grand.length ? `<div class="arrow" aria-hidden="true">↓</div><div class="lvl"><span>Y después</span>${grand.map(g=>node(c,g)).join("")}</div>` : ""}
+    </div></div>
+    ${sh.length ? `<div class="shared">También está en ${sh.map(([cid,mid]) => `<b>${esc(C(cid).short)}</b> (${C(cid).byId[mid] && isOk(C(cid),mid)?"aprobada":"sin aprobar"})`).join(" y ")}.</div>` : ""}
+    <button class="ghost" data-close>Cerrar</button>
+  </div>`;
+  $("scrim").hidden = false; $("sheet").hidden = false;
+  requestAnimationFrame(() => { $("scrim").classList.add("show"); $("sheet").classList.add("show"); });
+}
+function closeSheet(){
+  openId = null; $("scrim").classList.remove("show"); $("sheet").classList.remove("show");
+  setTimeout(() => { if (openId===null){ $("scrim").hidden = true; $("sheet").hidden = true; } }, 250);
+}
+
+/* ---------- Cambios de estado ---------- */
+function setState(c,id,s){
+  const beforeAv = c.all.filter(i=>status(c,i)==="av").map(i=>i.id);
+  const beforeT = titles(c).filter(x=>x.ok).map(x=>x.n);
+  const r = R(c)[id] || {};
+  if (!s) delete r.s; else { r.s = s; if (!r.cuat) r.cuat = cuatNow(); }
+  R(c)[id] = r;
+  const sh = partners(c.id,id);
+  syncShared(c.id,id); save();
+  const also = sh.length ? ` · también en ${sh.map(([cid])=>C(cid).short).join(" y ")}` : "";
+  if (s==="ok"){
+    const newT = titles(c).filter(x=>x.ok && !beforeT.includes(x.n));
+    const nuevas = c.all.filter(i=>status(c,i)==="av" && !beforeAv.includes(i.id)).map(i=>i.name);
+    if (newT.length){ celebrate(true); toast(`🎓 ¡Completaste ${newT.map(x=>x.n).join(" y ")}!`); }
+    else {
+      celebrate(false);
+      toast((nuevas.length ? `Se habilitó: ${nuevas.join(", ")}` : "Aprobada") + also);
+    }
+  } else if (s==="cur") toast("Marcada como cursando" + also);
+  else toast("Volvió a pendiente" + also);
+  route(true); if (openId) openSheet(c,id);
+}
+
+/* ---------- Festejo ---------- */
+function celebrate(big){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = $("fx"), ctx = cv.getContext("2d"), dpr = devicePixelRatio || 1;
+  cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; ctx.scale(dpr,dpr);
+  const css = getComputedStyle(document.documentElement);
+  const cols = ["--ok","--cur","--lila","--accent"].map(v => css.getPropertyValue(v).trim());
+  const N = big ? 160 : 45, ps = [];
+  for (let i=0;i<N;i++) ps.push({ x: big? Math.random()*innerWidth : innerWidth/2, y: big? -20 : innerHeight*.75,
+    vx: big? (Math.random()-.5)*2 : (Math.random()-.5)*9, vy: big? Math.random()*3+2 : -(Math.random()*9+5),
+    s: Math.random()*6+4, r: Math.random()*6, vr:(Math.random()-.5)*.3, col: cols[i%cols.length] });
+  const end = performance.now() + (big?2600:1300);
+  (function tick(t){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    ps.forEach(p => { p.vy += .25; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); ctx.restore(); });
+    if (t < end) requestAnimationFrame(tick); else ctx.clearRect(0,0,innerWidth,innerHeight);
+  })(performance.now());
+}
+
+/* ---------- Respaldo ---------- */
+const backupText = () => JSON.stringify({ app:"mi-carrera-unq", version:1, fecha:new Date().toISOString(), datos:rec });
+function restore(txt){
+  const d = JSON.parse(txt); const data = d.datos || d;
+  if (typeof data!=="object" || !CAREERS.some(c => data[c.id])) throw new Error("formato");
+  CAREERS.forEach(c => { if (!data[c.id]) data[c.id] = {}; });
+  rec = data; reconcileShared(); save();
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-toast-act]") && toastAction){ const a = toastAction; $("toast").classList.remove("show","act"); toastAction=null; a.run(); return; }
+  const go = e.target.closest("[data-go]"); if (go){ flashId = go.dataset.flash || null; if (location.hash==="#"+go.dataset.go) route(); else location.hash = go.dataset.go; return; }
+  if (e.target.closest("[data-theme-toggle]")){ cfg.theme = isDark() ? "light" : "dark"; saveCfg(); applyTheme(); route(true); return; }
+  const th = e.target.closest("[data-theme-set]"); if (th){ cfg.theme = th.dataset.themeSet; saveCfg(); applyTheme(); renderAjustes(); return; }
+  if (e.target.closest("[data-export]")){
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([backupText()],{type:"application/json"}));
+    a.download = `mi-carrera-unq-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove();
+    toast("Respaldo descargado"); return; }
+  if (e.target.closest("[data-import]")){ $("importFile").click(); return; }
+  if (e.target.closest("[data-copy]")){
+    const txt = backupText();
+    navigator.clipboard?.writeText(txt).then(() => toast("Respaldo copiado"), () => { $("pasteBox").value = txt; $("pasteBox").select(); toast("Seleccioná y copiá el texto"); });
+    return; }
+  if (e.target.closest("[data-restore]")){
+    try { restore($("pasteBox").value); $("restoreMsg").textContent = "Progreso restaurado."; toast("Progreso restaurado"); }
+    catch(err){ $("restoreMsg").textContent = "Ese texto no es un respaldo válido. Copialo completo, desde la primera llave hasta la última."; }
+    return; }
+  const c = current(); if (!c) return;
+  const f = e.target.closest("[data-f]"); if (f){ filter = f.dataset.f; renderMaterias(c); return; }
+  const o = e.target.closest("[data-open]"); if (o){ openSheet(c,o.dataset.open); return; }
+  if (e.target.closest("[data-close]") || e.target===$("scrim")){ closeSheet(); return; }
+  const sb = e.target.closest("#sheet [data-s]"); if (sb && !sb.disabled && openId){ setState(c,openId,sb.dataset.s); return; }
+  const tg = e.target.closest("[data-toggle]");
+  if (tg){ const id = tg.dataset.toggle, it = c.byId[id];
+    if (status(c,it)==="lock"){ tg.closest(".row").animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"none"}],{duration:250}); toast(`Te falta: ${missing(c,it).join(", ")}`); return; }
+    setState(c,id, isOk(c,id) ? "" : "ok"); return; }
+  const cb = e.target.closest("[data-cur]");
+  if (cb && !cb.disabled){ const id = cb.dataset.cur; setState(c,id, R(c)[id]?.s==="cur" ? "" : "cur"); }
+});
+$("importFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { restore(await f.text()); toast("Progreso restaurado"); } catch(err){ toast("Ese archivo no es un respaldo válido"); }
+  e.target.value = "";
+});
+document.addEventListener("input", e => {
+  const g = e.target.dataset?.g, c = current(); if (!g || !c || !openId) return;
+  const r = R(c)[openId] || (R(c)[openId] = {});
+  const v = e.target.value.trim();
+  if (/^[pr][12]$|^fin$/.test(g)){ const n = num(v); if (v!=="" && (n===null||n<1||n>10)){ e.target.setCustomValidity("Nota entre 1 y 10"); e.target.reportValidity(); return; } e.target.setCustomValidity(""); }
+  if (v==="") delete r[g]; else r[g] = v;
+  syncShared(c.id, openId); save();
+  const cd = condition(r), box = $("cond");
+  if (box){ box.className = "cond "+cd.k; box.innerHTML = `<b>${esc(cd.t)}</b>${cd.sub?`<span>${esc(cd.sub)}</span>`:""}`; }
+  route(true);
+});
+document.addEventListener("change", e => { const c = current(); if (e.target.dataset?.g && /^[pr][12]$|^fin$/.test(e.target.dataset.g) && c && openId) openSheet(c,openId); });
+document.addEventListener("keydown", e => { if (e.key==="Escape" && openId) closeSheet(); });
+
+function route(keep){
+  const r = parseRoute();
+  if (!keep){ closeSheet(); filter = "all"; }
+  const y = scrollY, fl = flashId;
+  if (r.view==="ajustes") renderAjustes();
+  else if (r.view==="materias") renderMaterias(r.c);
+  else if (r.view==="plan") renderPlan(r.c);
+  else if (r.view==="hist") renderHist(r.c);
+  else renderHome();
+  if (keep) scrollTo(0,y); else if (!fl) scrollTo(0,0);
+}
+addEventListener("hashchange", () => route());
+route();
+
+/* ---------- PWA: funcionar sin conexión y pedir almacenamiento persistente ---------- */
+if ("serviceWorker" in navigator) {
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+</script>
+
+</body>
+</html>
